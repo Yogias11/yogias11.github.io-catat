@@ -22,7 +22,9 @@
   --safe-top:env(safe-area-inset-top);--safe-bot:env(safe-area-inset-bottom);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;background:var(--bg);font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;}
+a,button,select{touch-action:manipulation;}
+html{height:100%;background:var(--bg);}
+body{min-height:100%;height:100%;background:var(--bg);font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;}
 .app{display:flex;flex-direction:column;height:100%;max-width:430px;margin:0 auto;background:var(--bg);}
 
 /* topbar */
@@ -35,7 +37,7 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,"Helvetica 
 .clbl{font-size:11px;opacity:.75;}
 
 /* layout */
-.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--safe-bot)+78px);}
+.content{flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--safe-bot)+78px);}
 .page{display:none;}.page.active{display:block;}
 
 /* tabbar — 4 tabs */
@@ -63,7 +65,7 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,"Helvetica 
 
 /* numpad */
 .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px;}
-.np{background:var(--gray-lt);border:none;border-radius:var(--rsm);padding:15px 4px;font-size:20px;font-weight:500;color:var(--gray-dk);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .1s;}
+.np{background:var(--gray-lt);border:none;border-radius:var(--rsm);padding:15px 4px;font-size:20px;font-weight:500;color:var(--gray-dk);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .1s;touch-action:manipulation;min-height:54px;width:100%;}
 .np:active{background:#DEDAD8;}.np.del{background:#EDECEA;color:var(--red);}
 
 /* chips */
@@ -93,7 +95,14 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,"Helvetica 
 /* fields */
 .field{margin-bottom:13px;}
 .field label{display:block;font-size:13px;font-weight:500;color:var(--gray-dk);margin-bottom:5px;}
-.field input,.field select{width:100%;padding:11px 13px;font-size:16px;border-radius:var(--rsm);border:1px solid #D8D6CF;background:var(--white);color:var(--gray-dk);-webkit-appearance:none;font-family:inherit;}
+.field input,.field select{
+  width:100%;padding:12px 13px;font-size:16px;border-radius:var(--rsm);
+  border:1px solid #D8D6CF;background:var(--white);color:var(--gray-dk);
+  -webkit-appearance:none;appearance:none;font-family:inherit;
+  display:block;min-height:44px;
+  -webkit-user-select:auto;user-select:auto;
+  touch-action:manipulation;
+}
 .field input:focus,.field select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(26,43,74,.08);}
 
 /* buttons */
@@ -219,12 +228,12 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,"Helvetica 
           <div class="amount-pre">Rp</div>
           <div class="amount-num" id="amount-disp">0</div>
         </div>
-        <div class="numpad">
-          <button class="np" data-v="1">1</button><button class="np" data-v="2">2</button><button class="np" data-v="3">3</button>
-          <button class="np" data-v="4">4</button><button class="np" data-v="5">5</button><button class="np" data-v="6">6</button>
-          <button class="np" data-v="7">7</button><button class="np" data-v="8">8</button><button class="np" data-v="9">9</button>
-          <button class="np" data-v="000">000</button><button class="np" data-v="0">0</button>
-          <button class="np del" id="np-del">⌫</button>
+        <div class="numpad" id="numpad">
+          <button class="np" onclick="npTap('1')">1</button><button class="np" onclick="npTap('2')">2</button><button class="np" onclick="npTap('3')">3</button>
+          <button class="np" onclick="npTap('4')">4</button><button class="np" onclick="npTap('5')">5</button><button class="np" onclick="npTap('6')">6</button>
+          <button class="np" onclick="npTap('7')">7</button><button class="np" onclick="npTap('8')">8</button><button class="np" onclick="npTap('9')">9</button>
+          <button class="np" onclick="npTap('000')">000</button><button class="np" onclick="npTap('0')">0</button>
+          <button class="np del" onclick="npDel()">⌫</button>
         </div>
       </div>
 
@@ -235,8 +244,8 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,"Helvetica 
           <div class="chips" id="exp-chips"></div>
         </div>
         <div class="card">
-          <div class="field"><label>Keterangan (opsional)</label><input type="text" id="f-desc" placeholder="mis: belanja sayur" autocomplete="off" autocorrect="off"></div>
-          <div class="field"><label>Tanggal</label><input type="date" id="f-date"></div>
+          <div class="field"><label>Keterangan (opsional)</label><input type="text" id="f-desc" placeholder="mis: belanja sayur" inputmode="text" enterkeyhint="done"></div>
+          <div class="field"><label>Tanggal</label><input type="date" id="f-date" inputmode="none"></div>
           <div class="field">
             <label>Bayar dari</label>
             <div class="who-grid" id="who-grid">
@@ -396,7 +405,7 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,"Helvetica 
         </div>
         <div class="field" style="margin-top:8px;">
           <label>URL Google Apps Script</label>
-          <input type="url" id="s-url" placeholder="https://script.google.com/macros/s/…/exec" style="font-size:12px;">
+          <input type="url" id="s-url" placeholder="https://script.google.com/macros/s/…/exec" style="font-size:12px;" inputmode="url">
         </div>
         <button class="btn-p" style="margin-top:6px;" onclick="saveUrl()">Simpan &amp; Hubungkan</button>
       </div>
@@ -523,12 +532,6 @@ function init() {
   buildIncSrcGrid();
   buildMonthGrid();
   buildBudgetPage();
-
-  document.getElementById("numpad").addEventListener("click", e => {
-    const b = e.target.closest(".np"); if(!b) return;
-    const v = b.dataset.v; if(v!==undefined) npTap(v);
-  });
-  document.getElementById("np-del").onclick = npDel;
 
   document.getElementById("who-grid").addEventListener("click", e => {
     const b = e.target.closest(".who-btn"); if(!b) return;
