@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Keuangan">
+<meta name="theme-color" content="#1A2B4A">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Keuangan Keluarga</title>
+<style>
+:root{
+  --navy:#1A2B4A;--teal:#0F6E56;--teal-lt:#E1F5EE;--teal-dk:#085041;
+  --blue:#185FA5;--blue-lt:#E6F1FB;
+  --red:#A32D2D;--red-lt:#FCEBEB;
+  --amber:#854F0B;--amber-lt:#FAEEDA;
+  --gray-dk:#444441;--gray-md:#888780;--gray-lt:#F1EFE8;
+  --white:#FFFFFF;--bg:#F3F2EE;
+  --r:14px;--rsm:9px;
+  --safe-top:env(safe-area-inset-top);--safe-bot:env(safe-area-inset-bottom);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;}
+.app{display:flex;flex-direction:column;height:100%;max-width:430px;margin:0 auto;background:var(--bg);}
+
+/* topbar */
+.topbar{background:var(--navy);color:#fff;padding:calc(var(--safe-top)+14px) 18px 14px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-title{font-size:17px;font-weight:600;}
+.topbar-sub{font-size:12px;opacity:.6;margin-top:2px;}
+.conn-row{display:flex;align-items:center;gap:5px;}
+.cdot{width:7px;height:7px;border-radius:50%;background:var(--gray-md);flex-shrink:0;}
+.cdot.ok{background:#34C759;}.cdot.err{background:#FF3B30;}
+.clbl{font-size:11px;opacity:.75;}
+
+/* layout */
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--safe-bot)+78px);}
+.page{display:none;}.page.active{display:block;}
+
+/* tabbar — 4 tabs */
+.tabbar{background:var(--white);border-top:.5px solid #D8D6CF;padding:6px 0 calc(var(--safe-bot)+6px);display:flex;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:10;}
+.tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:3px 0;-webkit-tap-highlight-color:transparent;}
+.tb svg{width:21px;height:21px;stroke:var(--gray-md);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.tb span{font-size:9px;color:var(--gray-md);}
+.tb.active svg{stroke:var(--navy);}
+.tb.active span{color:var(--navy);font-weight:600;}
+
+/* cards */
+.card{background:var(--white);border-radius:var(--r);padding:15px;margin-bottom:11px;border:.5px solid #E0DED7;}
+.card-title{font-size:12px;font-weight:600;color:var(--gray-md);text-transform:uppercase;letter-spacing:.06em;margin-bottom:11px;}
+
+/* mode toggle */
+.mode-bar{display:grid;grid-template-columns:1fr 1fr;background:var(--white);border-radius:var(--r);border:.5px solid #E0DED7;overflow:hidden;margin-bottom:12px;}
+.mode-btn{padding:11px;font-size:14px;font-weight:500;text-align:center;cursor:pointer;color:var(--gray-md);border:none;background:transparent;-webkit-tap-highlight-color:transparent;transition:all .15s;}
+.mode-btn.active{background:var(--navy);color:#fff;}
+
+/* amount */
+.amount-wrap{text-align:center;padding:6px 0 2px;}
+.amount-pre{font-size:14px;color:var(--gray-md);}
+.amount-num{font-size:40px;font-weight:700;color:var(--navy);letter-spacing:-.02em;line-height:1.1;}
+.amount-num.income{color:var(--teal);}
+
+/* numpad */
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px;}
+.np{background:var(--gray-lt);border:none;border-radius:var(--rsm);padding:15px 4px;font-size:20px;font-weight:500;color:var(--gray-dk);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .1s;}
+.np:active{background:#DEDAD8;}.np.del{background:#EDECEA;color:var(--red);}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:7px;}
+.chip{padding:8px 13px;border-radius:20px;border:1px solid #D8D6CF;font-size:13px;color:var(--gray-dk);background:var(--white);cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap;transition:all .12s;}
+.chip.sel{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:500;}
+
+/* who toggle */
+.who-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.who-btn{padding:10px 4px;border-radius:var(--rsm);border:1px solid #D8D6CF;font-size:13px;text-align:center;cursor:pointer;background:var(--white);color:var(--gray-dk);-webkit-tap-highlight-color:transparent;transition:all .12s;}
+.who-btn.sel{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:600;}
+
+/* month & source grids */
+.month-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.m-btn{padding:9px 4px;border-radius:var(--rsm);border:1px solid #D8D6CF;font-size:13px;text-align:center;cursor:pointer;background:var(--white);color:var(--gray-dk);-webkit-tap-highlight-color:transparent;transition:all .12s;}
+.m-btn.sel{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:600;}
+.m-btn.has-data{background:var(--teal-lt);border-color:var(--teal);}
+.year-sel{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:10px;}
+.year-btn{width:32px;height:32px;border-radius:50%;border:1px solid #D8D6CF;background:var(--white);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--gray-dk);}
+.year-lbl{font-size:16px;font-weight:600;color:var(--navy);min-width:44px;text-align:center;}
+.src-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.src-btn{padding:12px 8px;border-radius:var(--rsm);border:1px solid #D8D6CF;font-size:13px;text-align:center;cursor:pointer;background:var(--white);color:var(--gray-dk);-webkit-tap-highlight-color:transparent;line-height:1.3;transition:all .12s;}
+.src-btn .src-cat{font-size:10px;color:var(--gray-md);margin-top:2px;}
+.src-btn.sel{background:var(--teal);border-color:var(--teal);color:#fff;}
+.src-btn.sel .src-cat{color:rgba(255,255,255,.7);}
+
+/* fields */
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:13px;font-weight:500;color:var(--gray-dk);margin-bottom:5px;}
+.field input,.field select{width:100%;padding:11px 13px;font-size:16px;border-radius:var(--rsm);border:1px solid #D8D6CF;background:var(--white);color:var(--gray-dk);-webkit-appearance:none;font-family:inherit;}
+.field input:focus,.field select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(26,43,74,.08);}
+
+/* buttons */
+.btn-p{width:100%;padding:15px;background:var(--navy);color:#fff;font-size:16px;font-weight:600;border:none;border-radius:var(--r);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity .15s;margin-top:2px;}
+.btn-p:active{opacity:.85;}.btn-p:disabled{opacity:.4;}.btn-p.teal{background:var(--teal);}
+.spinner{width:17px;height:17px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* banner */
+.banner{background:var(--amber-lt);border:1px solid #FAC775;border-radius:var(--rsm);padding:9px 13px;font-size:13px;color:var(--amber);margin-bottom:12px;display:none;}
+.banner.show{display:block;}
+
+/* toast */
+.toast{position:fixed;bottom:calc(var(--safe-bot)+74px);left:50%;transform:translateX(-50%) translateY(16px);background:var(--gray-dk);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;white-space:nowrap;z-index:999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:var(--teal);}.toast.err{background:var(--red);}
+
+/* metrics */
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:11px;}
+.mc{background:var(--white);border-radius:var(--r);padding:13px;border:.5px solid #E0DED7;}
+.mc-lbl{font-size:11px;font-weight:600;color:var(--gray-md);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;}
+.mc-val{font-size:19px;font-weight:700;color:var(--navy);}
+.mc-val.teal{color:var(--teal);}.mc-val.red{color:var(--red);}
+.mc-sub{font-size:11px;color:var(--gray-md);margin-top:1px;}
+
+/* tx list */
+.tx{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:.5px solid #EEECE6;}
+.tx:last-child{border-bottom:none;}
+.tx-left{flex:1;min-width:0;}
+.tx-cat{font-size:14px;font-weight:500;color:var(--gray-dk);}
+.tx-meta{font-size:12px;color:var(--gray-md);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tx-amt{font-size:15px;font-weight:600;color:var(--navy);margin-left:10px;white-space:nowrap;}
+.tx-amt.inc{color:var(--teal);}
+
+/* segment control */
+.seg{display:flex;background:var(--white);border-radius:var(--rsm);border:.5px solid #E0DED7;overflow:hidden;margin-bottom:12px;}
+.seg-btn{flex:1;padding:9px 4px;font-size:13px;font-weight:500;text-align:center;cursor:pointer;color:var(--gray-md);border:none;background:transparent;-webkit-tap-highlight-color:transparent;}
+.seg-btn.active{background:var(--navy);color:#fff;}
+
+/* income table */
+.inc-table{width:100%;border-collapse:collapse;font-size:12px;}
+.inc-table th{text-align:left;font-weight:600;font-size:11px;color:var(--gray-md);padding:5px 4px;border-bottom:.5px solid #E8E6E0;}
+.inc-table td{padding:7px 4px;border-bottom:.5px solid #F0EEE8;color:var(--gray-dk);}
+.inc-table td.amt{text-align:right;font-weight:500;color:var(--navy);}
+.inc-table tr.total td{font-weight:700;background:var(--teal-lt);}
+
+/* ── ANGGARAN page ── */
+.budget-hero{background:var(--navy);border-radius:var(--r);padding:18px;margin-bottom:11px;color:#fff;}
+.bh-label{font-size:12px;opacity:.6;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.bh-amount{font-size:32px;font-weight:700;letter-spacing:-.02em;}
+.bh-sub{font-size:12px;opacity:.65;margin-top:4px;}
+.bh-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+.bh-stat{background:rgba(255,255,255,.1);border-radius:var(--rsm);padding:10px 12px;}
+.bh-stat-lbl{font-size:11px;opacity:.65;margin-bottom:2px;}
+.bh-stat-val{font-size:17px;font-weight:700;}
+.bh-stat-val.teal-txt{color:#5DCAA5;}
+.bh-stat-val.amber-txt{color:#FAC775;}
+
+.budget-section{margin-bottom:11px;}
+.bs-header{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;background:var(--white);border-radius:var(--r) var(--r) 0 0;border:.5px solid #E0DED7;border-bottom:none;cursor:pointer;}
+.bs-title{font-size:13px;font-weight:600;color:var(--gray-dk);}
+.bs-total{font-size:13px;font-weight:700;color:var(--navy);}
+.bs-chevron{font-size:16px;color:var(--gray-md);transition:transform .2s;}
+.bs-chevron.open{transform:rotate(180deg);}
+.bs-body{background:var(--white);border:.5px solid #E0DED7;border-top:.5px solid #F0EEE8;border-radius:0 0 var(--r) var(--r);overflow:hidden;max-height:0;transition:max-height .25s ease;}
+.bs-body.open{max-height:2000px;}
+
+.b-row{display:flex;align-items:center;justify-content:space-between;padding:10px 15px;border-bottom:.5px solid #F3F1EB;}
+.b-row:last-child{border-bottom:none;}
+.b-row-left{flex:1;min-width:0;}
+.b-row-name{font-size:14px;color:var(--gray-dk);}
+.b-row-pct{font-size:11px;color:var(--gray-md);margin-top:1px;}
+.b-row-right{text-align:right;margin-left:10px;}
+.b-row-amt{font-size:14px;font-weight:600;color:var(--navy);}
+
+/* progress bar */
+.prog-wrap{height:3px;background:#EDECEA;border-radius:2px;margin-top:4px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:2px;transition:width .4s;}
+.prog-teal{background:var(--teal);}
+.prog-blue{background:var(--blue);}
+.prog-navy{background:var(--navy);}
+
+/* summary table at bottom of anggaran */
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:.5px solid #EEECE6;}
+.sum-row:last-child{border-bottom:none;}
+.sum-lbl{font-size:14px;color:var(--gray-dk);}
+.sum-val{font-size:14px;font-weight:600;color:var(--navy);}
+.sum-val.teal{color:var(--teal);}.sum-val.red{color:var(--red);}
+
+/* setting */
+.srow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:.5px solid #EEECE6;}
+.srow:last-child{border-bottom:none;}
+.slbl{font-size:14px;color:var(--gray-dk);}
+.sval{font-size:12px;color:var(--gray-md);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;}
+.empty{text-align:center;padding:40px 0;color:var(--gray-md);}
+.empty svg{width:36px;height:36px;stroke:var(--gray-md);stroke-width:1.5;fill:none;margin:0 auto 10px;display:block;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div><div class="topbar-title">Keuangan Keluarga</div><div class="topbar-sub" id="today-lbl"></div></div>
+    <div class="conn-row"><div class="cdot" id="cdot"></div><span class="clbl" id="clbl">Menghubungkan…</span></div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════════════════════════════════════════
+         CATAT PAGE
+    ══════════════════════════════════════════ -->
+    <div class="page active" id="pg-catat">
+      <div class="banner" id="offline-banner">Offline — data masuk antrian, terkirim otomatis saat online.</div>
+
+      <div class="mode-bar">
+        <button class="mode-btn active" id="mode-exp" onclick="setMode('exp')">Pengeluaran</button>
+        <button class="mode-btn"        id="mode-inc" onclick="setMode('inc')">Pemasukan</button>
+      </div>
+
+      <div class="card">
+        <div class="amount-wrap">
+          <div class="amount-pre">Rp</div>
+          <div class="amount-num" id="amount-disp">0</div>
+        </div>
+        <div class="numpad">
+          <button class="np" data-v="1">1</button><button class="np" data-v="2">2</button><button class="np" data-v="3">3</button>
+          <button class="np" data-v="4">4</button><button class="np" data-v="5">5</button><button class="np" data-v="6">6</button>
+          <button class="np" data-v="7">7</button><button class="np" data-v="8">8</button><button class="np" data-v="9">9</button>
+          <button class="np" data-v="000">000</button><button class="np" data-v="0">0</button>
+          <button class="np del" id="np-del">⌫</button>
+        </div>
+      </div>
+
+      <!-- PENGELUARAN fields -->
+      <div id="exp-fields">
+        <div class="card">
+          <div class="card-title">Kategori</div>
+          <div class="chips" id="exp-chips"></div>
+        </div>
+        <div class="card">
+          <div class="field"><label>Keterangan (opsional)</label><input type="text" id="f-desc" placeholder="mis: belanja sayur" autocomplete="off" autocorrect="off"></div>
+          <div class="field"><label>Tanggal</label><input type="date" id="f-date"></div>
+          <div class="field">
+            <label>Bayar dari</label>
+            <div class="who-grid" id="who-grid">
+              <div class="who-btn sel" data-who="Suami">Suami</div>
+              <div class="who-btn" data-who="Istri">Istri</div>
+              <div class="who-btn" data-who="Bersama">Bersama</div>
+            </div>
+          </div>
+        </div>
+        <button class="btn-p" id="btn-simpan-exp">Simpan Pengeluaran</button>
+      </div>
+
+      <!-- PEMASUKAN fields -->
+      <div id="inc-fields" style="display:none">
+        <div class="card">
+          <div class="card-title">Sumber Pemasukan</div>
+          <div class="src-grid" id="inc-src-grid"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Bulan</div>
+          <div class="year-sel">
+            <button class="year-btn" onclick="changeYear(-1)">‹</button>
+            <span class="year-lbl" id="year-lbl">2025</span>
+            <button class="year-btn" onclick="changeYear(1)">›</button>
+          </div>
+          <div class="month-grid" id="month-grid"></div>
+        </div>
+        <button class="btn-p teal" id="btn-simpan-inc">Simpan Pemasukan</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         ANGGARAN PAGE
+    ══════════════════════════════════════════ -->
+    <div class="page" id="pg-anggaran">
+      <!-- Hero card -->
+      <div class="budget-hero">
+        <div class="bh-label">Total Pemasukan</div>
+        <div class="bh-amount">Rp 11.600.000</div>
+        <div class="bh-sub">Gaji Suami + Gaji Istri / bulan</div>
+        <div class="bh-grid">
+          <div class="bh-stat">
+            <div class="bh-stat-lbl">Tabungan</div>
+            <div class="bh-stat-val teal-txt">Rp 5.000.000</div>
+            <div style="font-size:11px;opacity:.65;margin-top:2px;">43,1% dari pemasukan</div>
+          </div>
+          <div class="bh-stat">
+            <div class="bh-stat-lbl">Pengeluaran</div>
+            <div class="bh-stat-val amber-txt">Rp 6.600.000</div>
+            <div style="font-size:11px;opacity:.65;margin-top:2px;">56,9% dari pemasukan</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pemasukan section -->
+      <div class="budget-section">
+        <div class="bs-header" onclick="toggleSec(this)">
+          <span class="bs-title">Pemasukan</span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="bs-total">Rp 11.600.000</span>
+            <span class="bs-chevron open">›</span>
+          </div>
+        </div>
+        <div class="bs-body open">
+          <div class="b-row">
+            <div class="b-row-left">
+              <div class="b-row-name">Gaji Suami</div>
+              <div class="b-row-pct">52,6% dari total</div>
+              <div class="prog-wrap"><div class="prog-fill prog-teal" style="width:52.6%"></div></div>
+            </div>
+            <div class="b-row-right"><div class="b-row-amt">Rp 6.100.000</div></div>
+          </div>
+          <div class="b-row">
+            <div class="b-row-left">
+              <div class="b-row-name">Gaji Istri</div>
+              <div class="b-row-pct">47,4% dari total</div>
+              <div class="prog-wrap"><div class="prog-fill prog-teal" style="width:47.4%"></div></div>
+            </div>
+            <div class="b-row-right"><div class="b-row-amt">Rp 5.500.000</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabungan & Investasi -->
+      <div class="budget-section">
+        <div class="bs-header" onclick="toggleSec(this)">
+          <span class="bs-title">Tabungan &amp; Investasi</span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="bs-total" style="color:var(--teal)">Rp 5.000.000</span>
+            <span class="bs-chevron open">›</span>
+          </div>
+        </div>
+        <div class="bs-body open" id="sav-body">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- Pengeluaran Rutin -->
+      <div class="budget-section">
+        <div class="bs-header" onclick="toggleSec(this)">
+          <span class="bs-title">Pengeluaran Rutin</span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="bs-total" style="color:var(--amber)">Rp 6.600.000</span>
+            <span class="bs-chevron open">›</span>
+          </div>
+        </div>
+        <div class="bs-body open" id="exp-body">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- Ringkasan -->
+      <div class="card">
+        <div class="card-title">Ringkasan</div>
+        <div class="sum-row"><span class="sum-lbl">Total Pemasukan</span><span class="sum-val">Rp 11.600.000</span></div>
+        <div class="sum-row"><span class="sum-lbl">Total Tabungan &amp; Investasi</span><span class="sum-val teal">Rp 5.000.000</span></div>
+        <div class="sum-row"><span class="sum-lbl">Total Pengeluaran Rutin</span><span class="sum-val">Rp 6.600.000</span></div>
+        <div class="sum-row"><span class="sum-lbl">Rasio Tabungan</span><span class="sum-val teal">43,1%</span></div>
+        <div class="sum-row"><span class="sum-lbl">Sisa (Simpan Dulu)</span><span class="sum-val teal">Rp 0</span></div>
+      </div>
+
+      <p style="font-size:12px;color:var(--gray-md);text-align:center;padding:4px 0 8px;">Ubah anggaran di file Excel, lalu update di sini via Pengaturan → Muat Ulang.</p>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         RIWAYAT PAGE
+    ══════════════════════════════════════════ -->
+    <div class="page" id="pg-riwayat">
+      <div class="seg">
+        <button class="seg-btn active" id="seg-exp" onclick="setRiwayatSeg('exp')">Pengeluaran</button>
+        <button class="seg-btn"        id="seg-inc" onclick="setRiwayatSeg('inc')">Pemasukan</button>
+      </div>
+      <div id="rw-exp-view">
+        <div class="metrics" id="rw-metrics"></div>
+        <div class="card">
+          <div class="card-title" id="rw-title">Transaksi Terbaru</div>
+          <div id="tx-list"></div>
+        </div>
+      </div>
+      <div id="rw-inc-view" style="display:none">
+        <div class="card" style="overflow-x:auto;">
+          <div class="card-title">Pemasukan Tahun Ini</div>
+          <div id="inc-table-wrap"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         PENGATURAN PAGE
+    ══════════════════════════════════════════ -->
+    <div class="page" id="pg-setting">
+      <div class="card">
+        <div class="card-title">Koneksi Google Sheets</div>
+        <div class="srow">
+          <span class="slbl">Status</span>
+          <span style="display:flex;align-items:center;gap:6px;"><div class="cdot" id="s-cdot"></div><span id="s-lbl" style="font-size:13px;">Belum diatur</span></span>
+        </div>
+        <div class="field" style="margin-top:8px;">
+          <label>URL Google Apps Script</label>
+          <input type="url" id="s-url" placeholder="https://script.google.com/macros/s/…/exec" style="font-size:12px;">
+        </div>
+        <button class="btn-p" style="margin-top:6px;" onclick="saveUrl()">Simpan &amp; Hubungkan</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Panduan Singkat</div>
+        <ol style="font-size:13px;color:#555;line-height:1.9;padding-left:18px;">
+          <li>Google Sheets → <strong>Extensions → Apps Script</strong></li>
+          <li>Paste isi <code>Code_v2.gs</code> → Save</li>
+          <li><strong>Deploy → New Deployment</strong> → Web app</li>
+          <li>Execute as: <em>Me</em>, Access: <em>Anyone</em> → Deploy</li>
+          <li>Copy URL → paste di atas → <strong>Simpan &amp; Hubungkan</strong></li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Antrian Offline</div>
+        <div class="srow"><span class="slbl">Belum terkirim</span><span id="q-count" style="font-size:16px;font-weight:700;color:var(--navy);">0</span></div>
+        <button class="btn-p teal" style="margin-top:4px;" onclick="flushQueue()">Kirim Ulang Antrian</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Info</div>
+        <div class="srow"><span class="slbl">Versi</span><span class="sval">2.1.0</span></div>
+        <div class="srow"><span class="slbl">Sheet pengeluaran</span><span class="sval">Catatan Pengeluaran</span></div>
+        <div class="srow"><span class="slbl">Sheet pemasukan</span><span class="sval">Pemasukan Bulanan</span></div>
+        <div class="srow"><span class="slbl">Data lokal</span><span class="sval" id="s-local">0 item</span></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- TABBAR — 4 tabs -->
+  <nav class="tabbar">
+    <button class="tb active" id="tab-catat" onclick="showTab('catat')">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      <span>Catat</span>
+    </button>
+    <button class="tb" id="tab-anggaran" onclick="showTab('anggaran')">
+      <svg viewBox="0 0 24 24"><path d="M3 3h18v4H3zM3 9h18v12H3z"/><path d="M8 13h4M8 17h6"/></svg>
+      <span>Anggaran</span>
+    </button>
+    <button class="tb" id="tab-riwayat" onclick="showTab('riwayat')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M9 4v5"/></svg>
+      <span>Riwayat</span>
+    </button>
+    <button class="tb" id="tab-setting" onclick="showTab('setting')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Pengaturan</span>
+    </button>
+  </nav>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Data ───────────────────────────────────────────────────────────────────
+const BUDGET = {
+  income: 11600000,
+  savingsTotal: 5000000,
+  expenseTotal: 6600000,
+  savings: [
+    { name:"Tabungan Utama",       amt:3000000 },
+    { name:"Dana Darurat",         amt:500000  },
+    { name:"Investasi",            amt:500000  },
+    { name:"Dana Anak",            amt:500000  },
+    { name:"Kesehatan",            amt:500000  },
+  ],
+  expenses: [
+    { name:"Bahan Makanan",        amt:800000  },
+    { name:"Tempat Tinggal (Kos)", amt:600000  },
+    { name:"Uang Suami",           amt:1250000 },
+    { name:"Uang Istri",           amt:1250000 },
+    { name:"Ortu Istri",           amt:1000000 },
+    { name:"Ortu Suami",           amt:500000  },
+    { name:"Skincare Istri",       amt:400000  },
+    { name:"Wifi",                 amt:200000  },
+    { name:"Cuci2",                amt:200000  },
+    { name:"Jumat Berkah",         amt:165000  },
+    { name:"Galon",                amt:110000  },
+    { name:"Listrik",              amt:100000  },
+    { name:"Gas",                  amt:25000   },
+  ]
+};
+
+const EXP_CATS = [
+  "Bahan Makanan","Tempat Tinggal (Kos)","Wifi","Listrik","Gas","Galon","Cuci2",
+  "Jumat Berkah","Skincare Istri","Uang Suami","Uang Istri",
+  "Ortu Istri","Ortu Suami","Lainnya"
+];
+const INC_SOURCES = [
+  {key:"Gaji Suami",   cat:"Gaji"},
+  {key:"Gaji Istri",   cat:"Gaji"},
+  {key:"Lembur Suami", cat:"Lembur"},
+  {key:"Lembur Istri", cat:"Lembur"},
+  {key:"THR Suami",    cat:"THR"},
+  {key:"THR Istri",    cat:"THR"},
+];
+const MON_LABELS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+
+const K_URL="gs_url", K_QUEUE="tx_queue", K_LOCAL="tx_local", K_IDATA="income_data";
+const getUrl   = ()  => localStorage.getItem(K_URL)||"";
+const getQueue = ()  => JSON.parse(localStorage.getItem(K_QUEUE)||"[]");
+const setQueue = q   => localStorage.setItem(K_QUEUE,JSON.stringify(q));
+const getLocal = ()  => JSON.parse(localStorage.getItem(K_LOCAL)||"[]");
+const setLocal = l   => { localStorage.setItem(K_LOCAL,JSON.stringify(l)); updateSettingInfo(); };
+const getIData = ()  => JSON.parse(localStorage.getItem(K_IDATA)||"{}");
+const setIData = d   => localStorage.setItem(K_IDATA,JSON.stringify(d));
+const fmt = n => Math.round(n).toLocaleString("id-ID");
+const today = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const dayName = () => new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+const pct = (v,total) => total>0 ? ((v/total)*100).toFixed(1) : "0.0";
+
+let amountStr="0", curMode="exp", selCat=EXP_CATS[0], selWho="Suami";
+let selSrc=INC_SOURCES[0].key, selMonth=new Date().getMonth()+1, selYear=new Date().getFullYear();
+let sending=false;
+
+// ── Init ───────────────────────────────────────────────────────────────────
+function init() {
+  document.getElementById("today-lbl").textContent = dayName();
+  document.getElementById("f-date").value = today();
+  document.getElementById("s-url").value  = getUrl();
+
+  buildExpChips();
+  buildIncSrcGrid();
+  buildMonthGrid();
+  buildBudgetPage();
+
+  document.getElementById("numpad").addEventListener("click", e => {
+    const b = e.target.closest(".np"); if(!b) return;
+    const v = b.dataset.v; if(v!==undefined) npTap(v);
+  });
+  document.getElementById("np-del").onclick = npDel;
+
+  document.getElementById("who-grid").addEventListener("click", e => {
+    const b = e.target.closest(".who-btn"); if(!b) return;
+    selWho = b.dataset.who;
+    document.querySelectorAll(".who-btn").forEach(x => x.classList.toggle("sel", x.dataset.who===selWho));
+  });
+
+  document.getElementById("btn-simpan-exp").onclick = simpanExp;
+  document.getElementById("btn-simpan-inc").onclick = simpanInc;
+
+  checkConn();
+  updateSettingInfo();
+  window.addEventListener("online",  () => { checkConn(); flushQueue(); });
+  window.addEventListener("offline", () => setConnUI(false,"Offline"));
+}
+
+// ── Budget page build ──────────────────────────────────────────────────────
+function buildBudgetPage() {
+  // Savings
+  const savBody = document.getElementById("sav-body");
+  savBody.innerHTML = BUDGET.savings.map(item => {
+    const p = pct(item.amt, BUDGET.income);
+    const barW = pct(item.amt, BUDGET.savingsTotal);
+    return `<div class="b-row">
+      <div class="b-row-left">
+        <div class="b-row-name">${item.name}</div>
+        <div class="b-row-pct">${p}% dari pemasukan</div>
+        <div class="prog-wrap"><div class="prog-fill prog-teal" style="width:${barW}%"></div></div>
+      </div>
+      <div class="b-row-right"><div class="b-row-amt">Rp ${fmt(item.amt)}</div></div>
+    </div>`;
+  }).join("");
+
+  // Expenses — sort by amount desc
+  const expBody = document.getElementById("exp-body");
+  const sorted = [...BUDGET.expenses].sort((a,b) => b.amt - a.amt);
+  expBody.innerHTML = sorted.map(item => {
+    const p = pct(item.amt, BUDGET.income);
+    const barW = pct(item.amt, BUDGET.expenseTotal);
+    return `<div class="b-row">
+      <div class="b-row-left">
+        <div class="b-row-name">${item.name}</div>
+        <div class="b-row-pct">${p}% dari pemasukan</div>
+        <div class="prog-wrap"><div class="prog-fill prog-navy" style="width:${barW}%"></div></div>
+      </div>
+      <div class="b-row-right"><div class="b-row-amt">Rp ${fmt(item.amt)}</div></div>
+    </div>`;
+  }).join("");
+}
+
+function toggleSec(header) {
+  const body    = header.nextElementSibling;
+  const chevron = header.querySelector(".bs-chevron");
+  const isOpen  = body.classList.contains("open");
+  body.classList.toggle("open", !isOpen);
+  chevron.classList.toggle("open", !isOpen);
+}
+
+// ── Mode ───────────────────────────────────────────────────────────────────
+function setMode(m) {
+  curMode = m;
+  document.getElementById("mode-exp").classList.toggle("active", m==="exp");
+  document.getElementById("mode-inc").classList.toggle("active", m==="inc");
+  document.getElementById("exp-fields").style.display = m==="exp" ? "" : "none";
+  document.getElementById("inc-fields").style.display = m==="inc" ? "" : "none";
+  document.getElementById("amount-disp").classList.toggle("income", m==="inc");
+  amountStr="0"; updAmount();
+}
+
+// ── Build components ───────────────────────────────────────────────────────
+function buildExpChips() {
+  const wrap = document.getElementById("exp-chips"); wrap.innerHTML="";
+  EXP_CATS.forEach(cat => {
+    const el = document.createElement("div");
+    el.className = "chip"+(cat===selCat?" sel":"");
+    el.textContent = cat;
+    el.onclick = () => { selCat=cat; document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("sel",c.textContent===cat)); };
+    wrap.appendChild(el);
+  });
+}
+
+function buildIncSrcGrid() {
+  const wrap = document.getElementById("inc-src-grid"); wrap.innerHTML="";
+  INC_SOURCES.forEach(src => {
+    const el = document.createElement("div");
+    el.className = "src-btn"+(src.key===selSrc?" sel":"");
+    el.innerHTML = `<div>${src.key}</div><div class="src-cat">${src.cat}</div>`;
+    el.onclick = () => { selSrc=src.key; document.querySelectorAll(".src-btn").forEach(x=>x.classList.toggle("sel",x===el)); buildMonthGrid(); };
+    wrap.appendChild(el);
+  });
+}
+
+function buildMonthGrid() {
+  const wrap = document.getElementById("month-grid"); wrap.innerHTML="";
+  document.getElementById("year-lbl").textContent = selYear;
+  const idata = getIData();
+  MON_LABELS.forEach((lbl,i) => {
+    const m = i+1;
+    const el = document.createElement("div");
+    el.className = "m-btn"+(m===selMonth?" sel":"");
+    const srcData = idata[selSrc]||[];
+    if(srcData[i]>0 && m!==selMonth) el.classList.add("has-data");
+    el.innerHTML = `${lbl}${srcData[i]>0?"<div style='font-size:9px;margin-top:1px;opacity:.75'>"+fmt(srcData[i]/1000)+"rb</div>":""}`;
+    el.onclick = () => { selMonth=m; buildMonthGrid(); };
+    wrap.appendChild(el);
+  });
+}
+
+function changeYear(d) { selYear+=d; buildMonthGrid(); }
+
+// ── Numpad ─────────────────────────────────────────────────────────────────
+function npTap(v) { if(amountStr==="0")amountStr=""; amountStr+=v; if(amountStr.length>12)amountStr=amountStr.slice(0,12); updAmount(); }
+function npDel()  { amountStr=amountStr.slice(0,-1)||"0"; updAmount(); }
+function updAmount() { document.getElementById("amount-disp").textContent = fmt(parseInt(amountStr,10)||0); }
+
+// ── Save pengeluaran ───────────────────────────────────────────────────────
+async function simpanExp() {
+  if(sending) return;
+  const amount = parseInt(amountStr,10)||0;
+  if(amount<=0) { toast("Masukkan jumlah","err"); return; }
+  const tx = { type:"pengeluaran", date:document.getElementById("f-date").value||today(),
+    category:selCat, desc:document.getElementById("f-desc").value.trim()||"-", amount, who:selWho, savedAt:new Date().toISOString() };
+  addLocal(tx);
+  const url = getUrl();
+  if(!url||!navigator.onLine) { enqueue(tx); toast(`Disimpan lokal (${getQueue().length} antrian)`,""); resetExp(); return; }
+  setBtnLoading("btn-simpan-exp",true,"Menyimpan…");
+  try {
+    const r=await fetch(url,{method:"POST",body:JSON.stringify(tx)});
+    const j=await r.json();
+    if(j.status==="ok") { toast("Tersimpan ✓","ok"); resetExp(); renderRiwayat(); }
+    else throw new Error(j.message);
+  } catch(err) { enqueue(tx); toast("Gagal — masuk antrian","err"); }
+  finally { setBtnLoading("btn-simpan-exp",false,"Simpan Pengeluaran"); }
+}
+
+// ── Save pemasukan ─────────────────────────────────────────────────────────
+async function simpanInc() {
+  if(sending) return;
+  const amount = parseInt(amountStr,10)||0;
+  if(amount<=0) { toast("Masukkan jumlah","err"); return; }
+  const payload = { type:"pemasukan", source:selSrc, month:selMonth, year:selYear, amount, savedAt:new Date().toISOString() };
+  const idata = getIData();
+  if(!idata[selSrc]) idata[selSrc]=Array(12).fill(0);
+  idata[selSrc][selMonth-1] = amount;
+  setIData(idata);
+  addLocal({...payload, category:selSrc, date:`${selYear}-${String(selMonth).padStart(2,"0")}-01`, who:"—", desc:""});
+  const url = getUrl();
+  if(!url||!navigator.onLine) { enqueue(payload); toast(`Disimpan lokal (${getQueue().length} antrian)`,""); amountStr="0"; updAmount(); buildMonthGrid(); return; }
+  setBtnLoading("btn-simpan-inc",true,"Menyimpan…");
+  try {
+    const r=await fetch(url,{method:"POST",body:JSON.stringify(payload)});
+    const j=await r.json();
+    if(j.status==="ok") { toast("Pemasukan tersimpan ✓","ok"); amountStr="0"; updAmount(); buildMonthGrid(); renderRiwayat(); }
+    else throw new Error(j.message);
+  } catch(err) { enqueue(payload); toast("Gagal — masuk antrian","err"); }
+  finally { setBtnLoading("btn-simpan-inc",false,"Simpan Pemasukan"); }
+}
+
+function resetExp() { amountStr="0"; updAmount(); document.getElementById("f-desc").value=""; document.getElementById("f-date").value=today(); }
+
+// ── Queue / local ──────────────────────────────────────────────────────────
+function enqueue(tx) { const q=getQueue(); q.push(tx); setQueue(q); updateSettingInfo(); }
+function addLocal(tx) { const l=getLocal(); l.unshift(tx); if(l.length>300)l.pop(); setLocal(l); }
+async function flushQueue() {
+  const url=getUrl(); if(!url||!navigator.onLine) return;
+  const q=getQueue(); if(!q.length) return;
+  const failed=[]; let sent=0;
+  for(const item of q) {
+    try { const r=await fetch(url,{method:"POST",body:JSON.stringify(item)}); const j=await r.json(); if(j.status==="ok")sent++; else failed.push(item); }
+    catch{ failed.push(item); }
+  }
+  setQueue(failed);
+  if(sent>0) toast(`${sent} antrian berhasil dikirim ✓`,"ok");
+  updateSettingInfo();
+}
+
+// ── Connection ─────────────────────────────────────────────────────────────
+function setConnUI(ok,lbl) {
+  ["cdot","s-cdot"].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.className="cdot"+(ok?" ok":" err");
+  });
+  document.getElementById("clbl").textContent=lbl;
+  const sl=document.getElementById("s-lbl"); if(sl) sl.textContent=lbl;
+}
+async function checkConn() {
+  const url=getUrl();
+  if(!url){setConnUI(false,"URL belum diatur");return;}
+  if(!navigator.onLine){setConnUI(false,"Offline");return;}
+  try {
+    const r=await fetch(url+"?type=pengeluaran");
+    const j=await r.json();
+    setConnUI(j.status==="ok","Terhubung");
+    document.getElementById("offline-banner").classList.remove("show");
+    fetchIncomeData();
+  } catch { setConnUI(false,"Gagal terhubung"); document.getElementById("offline-banner").classList.add("show"); }
+}
+async function fetchIncomeData() {
+  const url=getUrl(); if(!url) return;
+  try { const r=await fetch(url+"?type=pemasukan"); const j=await r.json(); if(j.status==="ok"&&j.data){setIData(j.data);buildMonthGrid();} } catch{}
+}
+function saveUrl() { localStorage.setItem(K_URL,document.getElementById("s-url").value.trim()); checkConn(); toast("URL disimpan","ok"); }
+function updateSettingInfo() {
+  const qc=document.getElementById("q-count"); if(qc) qc.textContent=getQueue().length;
+  const sl=document.getElementById("s-local"); if(sl) sl.textContent=getLocal().length+" item";
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+function showTab(name) {
+  ["catat","anggaran","riwayat","setting"].forEach(t=>{
+    document.getElementById("pg-"+t).classList.toggle("active",t===name);
+    document.getElementById("tab-"+t).classList.toggle("active",t===name);
+  });
+  if(name==="riwayat") renderRiwayat();
+  if(name==="setting") { updateSettingInfo(); checkConn(); }
+}
+
+// ── Riwayat ────────────────────────────────────────────────────────────────
+let rwSeg="exp";
+function setRiwayatSeg(s) {
+  rwSeg=s;
+  document.getElementById("seg-exp").classList.toggle("active",s==="exp");
+  document.getElementById("seg-inc").classList.toggle("active",s==="inc");
+  document.getElementById("rw-exp-view").style.display=s==="exp"?"":"none";
+  document.getElementById("rw-inc-view").style.display=s==="inc"?"":"none";
+  renderRiwayat();
+}
+function renderRiwayat() { rwSeg==="exp" ? renderExpRiwayat() : renderIncRiwayat(); }
+function renderExpRiwayat() {
+  const local=getLocal().filter(t=>t.type==="pengeluaran"||!t.type);
+  const mon=today().slice(0,7);
+  const thisM=local.filter(t=>(t.date||"").startsWith(mon));
+  const total=thisM.reduce((s,t)=>s+(t.amount||0),0);
+  const cats={}; thisM.forEach(t=>{cats[t.category]=(cats[t.category]||0)+t.amount;});
+  const top=Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
+  const budget=BUDGET.expenseTotal;
+  const budgetPct=budget>0?Math.min(Math.round((total/budget)*100),999):0;
+  const over=total>budget;
+  document.getElementById("rw-metrics").innerHTML=`
+    <div class="mc"><div class="mc-lbl">Pengeluaran bulan ini</div><div class="mc-val ${over?"red":""}">${fmt(total)}</div><div class="mc-sub">${budgetPct}% dari anggaran</div></div>
+    <div class="mc"><div class="mc-lbl">Sisa anggaran</div><div class="mc-val ${over?"red":"teal"}">${fmt(Math.abs(budget-total))}</div><div class="mc-sub">${over?"Melebihi!":"Tersisa"}</div></div>`;
+  document.getElementById("rw-title").textContent=`Transaksi Terbaru (${local.length})`;
+  const list=document.getElementById("tx-list");
+  if(!local.length){list.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg><p>Belum ada pengeluaran.</p></div>';return;}
+  list.innerHTML=local.slice(0,60).map(t=>`
+    <div class="tx">
+      <div class="tx-left">
+        <div class="tx-cat">${t.category}</div>
+        <div class="tx-meta">${t.date}${t.who&&t.who!=="—"?" · "+t.who:""}${t.desc&&t.desc!=="-"?" · "+t.desc:""}</div>
+      </div>
+      <div class="tx-amt">Rp ${fmt(t.amount)}</div>
+    </div>`).join("");
+}
+function renderIncRiwayat() {
+  const idata=getIData(); const wrap=document.getElementById("inc-table-wrap");
+  if(!Object.keys(idata).length){wrap.innerHTML='<div class="empty"><p>Belum ada data. Hubungkan ke Google Sheets.</p></div>';return;}
+  const totals=Array(12).fill(0);
+  let html='<table class="inc-table"><thead><tr><th>Sumber</th>';
+  MON_LABELS.forEach(m=>html+=`<th style="text-align:right">${m}</th>`);
+  html+='<th style="text-align:right">Total</th></tr></thead><tbody>';
+  INC_SOURCES.forEach(src=>{
+    const vals=idata[src.key]||Array(12).fill(0);
+    const rowTotal=vals.reduce((s,v)=>s+v,0);
+    html+=`<tr><td>${src.key}</td>`;
+    vals.forEach((v,i)=>{totals[i]+=v;html+=`<td class="amt">${v>0?fmt(v):"-"}</td>`;});
+    html+=`<td class="amt" style="color:var(--teal)">${rowTotal>0?fmt(rowTotal):"-"}</td></tr>`;
+  });
+  const grand=totals.reduce((s,v)=>s+v,0);
+  html+='<tr class="total"><td>TOTAL</td>';
+  totals.forEach(v=>html+=`<td class="amt">${v>0?fmt(v):"-"}</td>`);
+  html+=`<td class="amt">${fmt(grand)}</td></tr></tbody></table>`;
+  wrap.innerHTML=html;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function setBtnLoading(id,loading,label) {
+  sending=loading; const btn=document.getElementById(id); if(!btn) return;
+  btn.disabled=loading;
+  btn.innerHTML=loading?`<span class="spinner"></span>${label}`:label;
+}
+let toastTimer;
+function toast(msg,type) {
+  const el=document.getElementById("toast"); el.textContent=msg;
+  el.className="toast show"+(type?" "+type:"");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove("show"),3000);
+}
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+init();
+</script>
+</body>
+</html>
